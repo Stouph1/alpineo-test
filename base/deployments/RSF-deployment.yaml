@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-risf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-risf
+  template:
+    metadata:
+      labels:
+        app: hello-risf
+    spec:
+      containers:
+        - name: hello-risf
+          image: nginxinc/nginx-unprivileged:alpine
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: hello
+              mountPath: /usr/share/nginx/html
+            - name: hola
+              mountPath: /etc/nginx/conf.d
+          resources: {}
+      volumes:
+        - name: hello
+          configMap:
+            name: hello
+        - name: hola
+          configMap:
+            name: hola

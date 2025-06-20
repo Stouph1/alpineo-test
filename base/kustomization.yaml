@@ -1,0 +1,12 @@
+resources:
+  - configmaps/Configmap.yaml
+  - secrets/itsf-tls-secret.yaml
+  - secrets/risf-tls-secret.yaml
+  - services/ITSF-service.yaml
+  - services/RSF-service.yaml
+  - deployments/ITSF-deployment.yaml
+  - deployments/RSF-deployment.yaml
+  - volumes/PVC.yaml
+  - volumes/PV.yaml
+  - volumes/storageclass.yaml
+  - ingress/ingress.yaml

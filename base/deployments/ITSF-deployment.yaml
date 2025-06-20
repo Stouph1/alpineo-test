@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-itsf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-itsf
+  template:
+    metadata:
+      labels:
+        app: hello-itsf
+    spec:
+      initContainers:
+        - name: init-itsf
+          image: nginxinc/nginx-unprivileged:alpine
+          command: ["/bin/sh", "-c"]
+          args:
+            - mkdir -p /tmp/itsf && echo '<html><h1>hello itsf</h1></html>' > /tmp/itsf/index.html && chmod -R 755 /tmp/itsf
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          volumeMounts:
+            - name: data-itsf
+              mountPath: /tmp/itsf
+      containers:
+        - name: hello-itsf
+          image: nginxinc/nginx-unprivileged:alpine
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: data-itsf
+              mountPath: /usr/share/nginx/html
+            - name: hola
+              mountPath: /etc/nginx/conf.d
+          resources: {}
+      volumes:
+        - name: data-itsf
+          persistentVolumeClaim:
+            claimName: itsf-pvc
+        - name: hola
+          configMap:
+            name: hola
