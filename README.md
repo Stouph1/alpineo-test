@@ -27,17 +27,17 @@ Déployer deux microservices NGINX sur un cluster Kubernetes local avec :
 
 📁 Arborescence du projet
 
-Alpineo-test/
-├── base/
-│   ├── configmaps/          # Contenus HTML injectés par ConfigMap
-│   ├── deployments/         # Déploiements NGINX non-root
-│   ├── ingress/             # Ingress exposé avec TLS
-│   ├── secrets/             # Certificats TLS auto-signés
-│   ├── services/            # Services ClusterIP
-│   └── volumes/             # PV / PVC / StorageClass (pour ITSF)
-├── overlays/
-│   └── dev/                 # Overlay namespace + réutilisation des ressources sur d'autre environnement
-└── tls-ca/                  # PKI locale : ca.crt, *.crt, *.key, *.csr
+    Alpineo-test/
+    ├── base/
+    │   ├── configmaps/          # Contenus HTML injectés par ConfigMap
+    │   ├── deployments/         # Déploiements NGINX non-root
+    │   ├── ingress/             # Ingress exposé avec TLS
+    │   ├── secrets/             # Certificats TLS auto-signés
+    │   ├── services/            # Services ClusterIP
+    │   └── volumes/             # PV / PVC / StorageClass (pour ITSF)
+    ├── overlays/
+    │   └── dev/                 # Overlay namespace + réutilisation des ressources sur d'autre environnement
+    └── tls-ca/                  # PKI locale : ca.crt, *.crt, *.key, *.csr
 
 
 🔧 Étapes réalisées
