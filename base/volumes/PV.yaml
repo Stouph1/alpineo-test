@@ -8,7 +8,15 @@ spec:
   volumeMode: Filesystem
   accessModes:
     - ReadWriteOnce
-  hostPath:
-    path: /mnt/data/itsf
+  local:
+    path: /tmp/kind-pv/itsf  
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - devops-test-alpineo-control-plane
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: "bob"
+  storageClassName: "local-storage"

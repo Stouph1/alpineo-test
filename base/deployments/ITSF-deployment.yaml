@@ -17,24 +17,60 @@ spec:
           image: nginxinc/nginx-unprivileged:alpine
           command: ["/bin/sh", "-c"]
           args:
-            - mkdir -p /tmp/itsf && echo '<html><h1>hello ITSF</h1></html>' > /tmp/itsf/index.html && chmod -R 755 /tmp/itsf
+            - |
+              echo '<html>
+              <head><title>Hello ITSF</title></head>
+              <body>
+                <h1>Hello ITSF</h1>
+                <p>This is a persistent volume-based service.</p>
+              </body>
+              </html>' > /usr/share/nginx/html/index.html
           securityContext:
-            runAsUser: 0
-            runAsGroup: 0
+            runAsUser: 101
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
           volumeMounts:
             - name: data-itsf
-              mountPath: /tmp/itsf
+              mountPath: /usr/share/nginx/html
       containers:
         - name: hello-itsf
           image: nginxinc/nginx-unprivileged:alpine
           ports:
             - containerPort: 8080
+          securityContext:
+            runAsUser: 101
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 10m       
+              memory: 16Mi  
+            limits:
+              cpu: 50m      
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
           volumeMounts:
             - name: data-itsf
               mountPath: /usr/share/nginx/html
             - name: nginx-config
               mountPath: /etc/nginx/conf.d
-          resources: {}
+            - name: tmp
+              mountPath: /tmp
+            - name: var-cache
+              mountPath: /var/cache/nginx
       volumes:
         - name: data-itsf
           persistentVolumeClaim:
@@ -42,3 +78,7 @@ spec:
         - name: nginx-config
           configMap:
             name: nginx-config
+        - name: tmp
+          emptyDir: {}
+        - name: var-cache
+          emptyDir: {}

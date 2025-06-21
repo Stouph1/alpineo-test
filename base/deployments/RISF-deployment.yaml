@@ -17,12 +17,30 @@ spec:
           image: nginxinc/nginx-unprivileged:alpine
           ports:
             - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
           volumeMounts:
             - name: risf-html-content
               mountPath: /usr/share/nginx/html
             - name: nginx-config
               mountPath: /etc/nginx/conf.d
-          resources: {}
+          resources:
+            requests:
+              cpu: 10m       
+              memory: 16Mi  
+            limits:
+              cpu: 50m      
+              memory: 64Mi
       volumes:
         - name: risf-html-content
           configMap:
