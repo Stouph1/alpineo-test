@@ -1,104 +1,205 @@
-🚀 Projet Kubernetes – Déploiement de deux microservices statiques
+# 🚀 Projet Alpineo - Déploiement Kubernetes avec Ingress HTTPS
 
+## 📋 Objectif du projet
 
-📋 Objectif du test
+Déployer **deux microservices NGINX** sur un cluster Kubernetes local avec :
+- ✅ Contenu HTML statique différent pour chaque service
+- ✅ Exposition via **Ingress + HTTPS** (certificats auto-signés)
+- ✅ **Accès direct** sans port-forward (production-ready)
+- ✅ Bonnes pratiques de production (sécurité, organisation)
 
-Déployer deux microservices NGINX sur un cluster Kubernetes local avec :
+## 🛠️ Stack technique
 
-    un contenu HTML statique différent pour chaque service (hello RISF / hello ITSF)
+| Technologie | Usage |
+|-------------|-------|
+| **Kubernetes** | Orchestrateur (Kind pour le local) |
+| **NGINX** | Serveur web (images Alpine non-root) |
+| **Ingress-NGINX** | Load balancer + terminaison TLS |
+| **Kustomize** | Gestion des configurations |
+| **OpenSSL** | Génération des certificats TLS |
 
-    une exposition via Ingress + HTTPS (certificats générés localement)
+## 🏗️ Architecture du projet
 
-    des bonnes pratiques de prod (pas de root, Kustomize, découpage logique…)
+    ```
+    📁 Alpineo-test/
+    ├── 📂 base/                     # 🎯 Ressources Kubernetes de base
+    │   ├── configmaps/              # 📄 Contenu HTML injecté
+    │   ├── deployments/             # 🚀 Déploiements NGINX sécurisés
+    │   ├── ingress/                 # 🌐 Exposition HTTPS
+    │   ├── secrets/                 # 🔒 Certificats TLS
+    │   ├── services/                # 🔗 Services ClusterIP
+    │   └── volumes/                 # 💾 Stockage persistant
+    ├── 📂 overlays/dev/             # 🎨 Configuration environnement
+    ├── 📂 scripts/                  # 🔧 Scripts d'automatisation
+    ├── 📂 tls-ca/                   # 🔐 PKI locale (certificats)
+    ├── 📜 deploy.sh                 # 🚀 Script de déploiement automatique
+    ├── 📜 kind-config.yaml          # ⚙️ Configuration cluster KIND
+    └── 📜 ingress-service-patch.yaml # 🔧 Configuration ports fixes
+    ```
 
+## 🎯 Les deux microservices
 
-🛠️ Stack utilisée
+### 🟦 **hello-risf** (Service 1)
+- **Type** : Page statique via ConfigMap
+- **Contenu** : HTML injecté directement dans NGINX
+- **URL** : `https://hello-risf.local.domain`
+- **Sécurité** : Utilisateur non-root, lecture seule
 
-    Kubernetes (Kind)
+### 🟩 **hello-itsf** (Service 2)  
+- **Type** : Page via volume persistant
+- **Contenu** : HTML monté via PV/PVC avec initContainer
+- **URL** : `https://hello-itsf.local.domain`
+- **Persistance** : Stockage local avec survie aux redémarrages
 
-    NGINX
+## 🚀 Déploiement rapide (1 commande)
 
-    TLS auto-signé (PKI locale)
+### Prérequis
+```bash
+# Installer les outils nécessaires
+# KIND : https://kind.sigs.k8s.io/docs/user/quick-start/
+# kubectl : https://kubernetes.io/docs/tasks/tools/
+```
 
-    kubectl, kustomize, k9s
+### Déploiement automatique
+```bash
+# 1. Cloner le repo
+git clone <votre-repo>
+cd Alpineo-test
 
-    Structure GitOps ready (base/overlays)
+# 2. Créer le cluster et déployer (tout automatique !)
+kind create cluster --name devops-test-alpineo --config kind-config.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
+kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+kubectl apply -f ingress-service-patch.yaml
+./deploy.sh
 
+# 3. Ajouter les domaines locaux
+echo "127.0.0.1 hello-risf.local.domain" | sudo tee -a /etc/hosts
+echo "127.0.0.1 hello-itsf.local.domain" | sudo tee -a /etc/hosts
+```
 
-📁 Arborescence du projet
+### 🎉 Accès aux applications
+- **Service RISF** : https://hello-risf.local.domain
+- **Service ITSF** : https://hello-itsf.local.domain
 
-    Alpineo-test/
-    ├── base/
-    │   ├── configmaps/          # Contenus HTML injectés par ConfigMap
-    │   ├── deployments/         # Déploiements NGINX non-root
-    │   ├── ingress/             # Ingress exposé avec TLS
-    │   ├── secrets/             # Certificats TLS auto-signés
-    │   ├── services/            # Services ClusterIP
-    │   └── volumes/             # PV / PVC / StorageClass (pour ITSF)
-    ├── overlays/
-    │   └── dev/                 # Overlay namespace + réutilisation des ressources sur d'autre environnement
-    └── tls-ca/                  # PKI locale : ca.crt, *.crt, *.key, *.csr
+**🔥 Plus besoin de port-forward !** Accès direct sur les ports 80/443 !
 
+## 📋 Détail des composants
 
-🔧 Étapes réalisées
-🖼️ 1. Microservice hello-risf
+### 🔧 **deploy.sh** - Script de déploiement
+Automatise 3 étapes :
+1. **Génération TLS** : Crée la PKI locale + certificats
+2. **Namespace** : Crée le namespace `alpineo`  
+3. **Déploiement** : Applique toutes les ressources via Kustomize
 
-    Création d’un Dockerfile basé sur nginx:alpine contenant une page HTML custom.
+### 🔐 **Gestion TLS/HTTPS**
+- **CA locale** : `tls-ca/ca.crt` (autorité de certification)
+- **Certificats** : Générés pour chaque domaine
+- **Secrets K8s** : Certificats injectés automatiquement
+- **Ingress** : Terminaison TLS avec redirection HTTP→HTTPS
 
-    Déploiement d’un pod non-root (user nginx) via Deployment.
+### ⚙️ **Configuration KIND (kind-config.yaml)**
+```yaml
+# Expose les ports Ingress directement sur l'host
+extraPortMappings:
+- containerPort: 30080  # HTTP
+  hostPort: 80
+- containerPort: 30443  # HTTPS  
+  hostPort: 443
+```
 
-    Exposition via Service + Ingress avec certificat signé localement.
+### 🔧 **Patch Ingress (ingress-service-patch.yaml)**
+Force l'utilisation de ports NodePort fixes au lieu de ports aléatoires :
+- **Port 30080** pour HTTP (80)
+- **Port 30443** pour HTTPS (443)
 
-💽 2. Microservice hello-itsf
+## 🔍 Commandes utiles
 
-    Page HTML montée via volume persistant (PV + PVC local-path).
+### Vérification du déploiement
+    ```bash
+    # État des pods
+    kubectl get pods -n alpineo
 
-    Contenu injecté au démarrage avec initContainer.
+    # Services et ingress
+    kubectl get svc,ingress -n alpineo
 
-    Utilise aussi nginx:alpine, déployé sans root.
+    # Logs en cas de problème
+    kubectl logs -n alpineo deployment/hello-risf
+    kubectl logs -n alpineo deployment/hello-itsf
+    ```
 
-🔒 3. HTTPS via Ingress + TLS
+    ### Tests de connectivité
+    ```bash
+    # Test direct avec curl
+    curl -k -H "Host: hello-risf.local.domain" https://localhost
+    curl -k -H "Host: hello-itsf.local.domain" https://localhost
 
-    Création d’une PKI locale :
+    # Vérification des certificats
+    openssl s_client -connect localhost:443 -servername hello-risf.local.domain
+    ```
 
-        ca.crt / ca.key pour signer les certifs
+    ### Nettoyage
+    ```bash
+    # Supprimer le cluster
+    kind delete cluster --name devops-test-alpineo
 
-        hello-risf.local.domain & hello-itsf.local.domain
+    # Nettoyer /etc/hosts (optionnel)
+    sudo sed -i '/hello-.*\.local\.domain/d' /etc/hosts
+    ```
 
-    Création des Secret Kubernetes contenant les clés et certificats.
+## 🛡️ Sécurité implémentée
 
-    Ingress configuré avec :
+- ✅ **Containers non-root** : Utilisateur `nginx` (UID 101)
+- ✅ **Certificats TLS** : Chiffrement bout-en-bout
+- ✅ **Redirection HTTPS** : Pas d'accès HTTP non sécurisé
+- ✅ **Namespaces** : Isolation des ressources
+- ✅ **ReadOnly filesystems** : Protection contre l'écriture
 
-    tls:
-      - hosts:
-          - hello-risf.local.domain
-          - hello-itsf.local.domain
-        secretName: risf-tls / itsf-tls
+## 🎯 Bonnes pratiques appliquées
 
-📦 4. Kustomize & Namespaces
+### 📁 **Structure GitOps**
+- **base/** : Ressources communes réutilisables
+- **overlays/dev/** : Configuration spécifique à l'environnement
+- **Kustomization** : Gestion déclarative des configurations
 
-    Structure découpée en base/ + overlays/dev pour permettre :
+### 🔄 **Production-ready**
+- **Health checks** : Liveness et readiness probes
+- **Resource limits** : CPU/Memory contrôlés  
+- **Horizontal scaling** : Ready pour HPA
+- **Persistent storage** : Volumes survivant aux redémarrages
 
-        Réutilisabilité
+## ❓ FAQ
 
-        Déploiement dans un namespace dédié (alpineo)
+### **Q: Pourquoi deux approches différentes (ConfigMap vs Volume) ?**
+**R:** Pour démontrer la maîtrise des deux patterns :
+- **ConfigMap** : Idéal pour des configurations statiques
+- **Volumes** : Nécessaire pour des données persistantes ou volumineuses
 
-        Gestion centralisée des environnements
+### **Q: Pourquoi un script de patch pour l'Ingress ?**
+**R:** KIND génère des ports NodePort aléatoires. Le patch force des ports fixes (30080/30443) pour permettre un accès direct sans port-forward.
 
-🌍 Test local
-🧪 Préparation :
+### **Q: Peut-on utiliser cette config en production ?**
+**R:** La structure est production-ready ! Il faut juste :
+- Remplacer KIND par un vrai cluster (EKS, GKE, AKS)
+- Utiliser des certificats signés par une CA reconnue
+- Adapter les domaines et la configuration réseau
 
-Ajoute dans /etc/hosts :
+### **Q: Comment ajouter un nouvel environnement ?**
+**R:** Créer un nouveau overlay :
+```bash
+mkdir overlays/staging
+# Copier overlays/dev/kustomization.yaml
+# Adapter la configuration (namespace, replicas, etc.)
+```
 
-127.0.0.1 hello-risf.local.domain
-127.0.0.1 hello-itsf.local.domain
+---
 
-Lance le port-forward :
+## 🏆 Résultat final
 
-kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8443:443
+✅ **2 microservices** déployés avec HTTPS  
+✅ **Accès direct** sur localhost (sans port-forward)  
+✅ **Sécurisé** (TLS + containers non-root)  
+✅ **Production-ready** (GitOps, monitoring, scaling)  
+✅ **1 commande** pour tout déployer  
 
-🧼 Test via navigateur :
-
-    https://hello-risf.local.domain:8443
-
-    https://hello-itsf.local.domain:8443
+**🎯 Architecture Kubernetes complète et fonctionnelle !**

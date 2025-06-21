@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hello
+  name: risf-html-content
 data: 
   index.html: |
     <html>
@@ -19,7 +19,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hola
+  name: nginx-config
 data:
   default.conf: |
     server {
@@ -29,5 +29,3 @@ data:
             index index.html;
         }
     }
-
-

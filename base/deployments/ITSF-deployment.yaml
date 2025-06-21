@@ -17,7 +17,7 @@ spec:
           image: nginxinc/nginx-unprivileged:alpine
           command: ["/bin/sh", "-c"]
           args:
-            - mkdir -p /tmp/itsf && echo '<html><h1>hello itsf</h1></html>' > /tmp/itsf/index.html && chmod -R 755 /tmp/itsf
+            - mkdir -p /tmp/itsf && echo '<html><h1>hello ITSF</h1></html>' > /tmp/itsf/index.html && chmod -R 755 /tmp/itsf
           securityContext:
             runAsUser: 0
             runAsGroup: 0
@@ -32,13 +32,13 @@ spec:
           volumeMounts:
             - name: data-itsf
               mountPath: /usr/share/nginx/html
-            - name: hola
+            - name: nginx-config
               mountPath: /etc/nginx/conf.d
           resources: {}
       volumes:
         - name: data-itsf
           persistentVolumeClaim:
             claimName: itsf-pvc
-        - name: hola
+        - name: nginx-config
           configMap:
-            name: hola
+            name: nginx-config

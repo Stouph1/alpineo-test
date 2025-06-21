@@ -1,3 +1,8 @@
+# Secrets TLS (ne jamais commit)
 *-tls-secret.yaml
+
+# Certificats générés 
 tls-ca/
-base/secrets/*
+
+!*.template
+!.gitkeep
